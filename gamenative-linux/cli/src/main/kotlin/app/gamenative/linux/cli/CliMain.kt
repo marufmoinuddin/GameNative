@@ -93,39 +93,24 @@ fun main(args: Array<String>) {
         val selectedGame = games[choice - 1]
 
         if (!controller.isInstalled(selectedGame.id)) {
-            // ── Download + configure flow ──────────────────────────────────
             println()
-            println("${YELLOW}⬇  Downloading ${BOLD}${selectedGame.name}${RESET}${YELLOW}…${RESET}")
-            controller.download(selectedGame.id)
-
-            // Simulate download progress
-            val bar = StringBuilder()
-            val steps = 20
-            for (step in 1..steps) {
-                bar.append("█")
-                val pct = (step * 100) / steps
-                print("\r  [${CYAN}${bar}${RESET}${" ".repeat(steps - step)}] $pct%")
-                System.out.flush()
-                Thread.sleep(80)
+            println("${YELLOW}⬇  Requesting install for ${BOLD}${selectedGame.name}${RESET}${YELLOW}…${RESET}")
+            val installResult = controller.download(selectedGame.id)
+            if (installResult.success) {
+                println("${GREEN}✅ ${installResult.message}${RESET}")
+                println("${DIM}Steam controls download progress; game shows [installed] after manifest appears.${RESET}")
+            } else {
+                println("${RED}✗ ${installResult.message}${RESET}")
             }
-            println("\r  [${GREEN}${"█".repeat(steps)}${RESET}] 100%")
-
-            println("${GREEN}✅ Download complete.${RESET}")
-            println()
-            println("${YELLOW}⚙  Configuring runtime environment…${RESET}")
-            Thread.sleep(600)
-            println("${GREEN}✅ Environment configured.${RESET}")
-
-            controller.markInstalled(selectedGame.id)
-            println("${GREEN}✅ ${BOLD}${selectedGame.name}${RESET}${GREEN} installed.${RESET}")
         } else {
-            // ── Launch flow ───────────────────────────────────────────────
             println()
             println("${YELLOW}🚀 Launching ${BOLD}${selectedGame.name}${RESET}${YELLOW}…${RESET}")
-            val sessionId = controller.launch(selectedGame.id, profileId = "default")
-            println("${GREEN}✅ Game launched. Session: ${DIM}$sessionId${RESET}")
-            println("${DIM}(press Enter once the game exits to return to the library)${RESET}")
-            readLine()
+            val launchResult = controller.launch(selectedGame.id)
+            if (launchResult.success) {
+                println("${GREEN}✅ ${launchResult.message}${RESET}")
+            } else {
+                println("${RED}✗ ${launchResult.message}${RESET}")
+            }
         }
     }
 }

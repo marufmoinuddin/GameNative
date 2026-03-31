@@ -4,7 +4,6 @@ import app.gamenative.data.SteamApp
 import app.gamenative.linux.store.steam.InMemorySteamDownloadManager
 import app.gamenative.linux.store.steam.InMemorySteamLibraryService
 import app.gamenative.linux.store.steam.InMemorySteamSessionManager
-import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -27,15 +26,38 @@ class CliControllerTest {
         )
     }
 
-    private fun makeController(): Pair<CliController, java.nio.file.Path> {
-        val tempDir = Files.createTempDirectory("cli-controller-test")
+    private class FakeSteamHost : CliSteamHost {
+        val installed = linkedSetOf<Int>()
+        var nextInstallSuccess = true
+        var nextLaunchSuccess = true
+
+        override fun isInstalled(appId: Int): Boolean = installed.contains(appId)
+
+        override fun requestInstall(appId: Int): CliActionResult {
+            return if (nextInstallSuccess) {
+                CliActionResult(true, "Install request sent to Steam for appId $appId")
+            } else {
+                CliActionResult(false, "Failed to reach Steam client")
+            }
+        }
+
+        override fun launchApp(appId: Int): CliActionResult {
+            return if (!installed.contains(appId)) {
+                CliActionResult(false, "Game is not installed yet.")
+            } else if (nextLaunchSuccess) {
+                CliActionResult(true, "Launch request sent to Steam for appId $appId")
+            } else {
+                CliActionResult(false, "Launch failed")
+            }
+        }
+    }
+
+    private fun makeController(host: FakeSteamHost = FakeSteamHost()): Pair<CliController, FakeSteamHost> {
         val controller = CliController(
-            profileRepositoryPath = tempDir.resolve("profiles.json"),
-            taskStorePath = tempDir.resolve("cli-tasks.properties"),
-            stateDir = tempDir.resolve("sessions"),
+            steamHost = host,
             services = testServices(),
         )
-        return controller to tempDir
+        return controller to host
     }
 
     @Test
@@ -68,55 +90,39 @@ class CliControllerTest {
     }
 
     @Test
-    fun downloadThenMarkInstalledTracksState() {
-        val (controller, _) = makeController()
+    fun downloadRequestDoesNotFakeInstallState() {
+        val (controller, host) = makeController()
         controller.login("alice", "secret")
         val games = controller.library()
         val appId = games.first().id
 
         assertFalse(controller.isInstalled(appId), "Game should not be installed initially")
-        controller.download(appId)
-        assertFalse(controller.isInstalled(appId), "Game should still be QUEUED, not COMPLETED")
-        controller.markInstalled(appId)
-        assertTrue(controller.isInstalled(appId), "Game should be COMPLETED after markInstalled")
+        val downloadResult = controller.download(appId)
+        assertTrue(downloadResult.success)
+        assertFalse(controller.isInstalled(appId), "Install should not be faked by CLI")
+        host.installed += appId
+        assertTrue(controller.isInstalled(appId), "Install state should reflect Steam manifest state")
     }
 
     @Test
-    fun installStatePersistedAcrossReloads() {
-        val tempDir = Files.createTempDirectory("cli-controller-persist-test")
-        val controller1 = CliController(
-            profileRepositoryPath = tempDir.resolve("profiles.json"),
-            taskStorePath = tempDir.resolve("cli-tasks.properties"),
-            stateDir = tempDir.resolve("sessions"),
-            services = testServices(),
-        )
-        controller1.login("alice", "secret")
-        val appId = controller1.library().first().id
-        controller1.download(appId)
-        controller1.markInstalled(appId)
-
-        // Re-create controller from same paths to simulate restart
-        val controller2 = CliController(
-            profileRepositoryPath = tempDir.resolve("profiles.json"),
-            taskStorePath = tempDir.resolve("cli-tasks.properties"),
-            stateDir = tempDir.resolve("sessions"),
-            services = testServices(),
-        )
-        assertTrue(
-            controller2.isInstalled(appId),
-            "Install state should survive a controller restart",
-        )
-    }
-
-    @Test
-    fun launchReturnNonBlankSessionId() {
+    fun launchFailsWhenNotInstalled() {
         val (controller, _) = makeController()
         controller.login("alice", "secret")
         val appId = controller.library().first().id
-        controller.download(appId)
-        controller.markInstalled(appId)
 
-        val sessionId = controller.launch(appId)
-        assertTrue(sessionId.isNotBlank(), "Session ID must not be blank after launch")
+        val launchResult = controller.launch(appId)
+        assertFalse(launchResult.success)
+    }
+
+    @Test
+    fun launchUsesSteamHostWhenInstalled() {
+        val (controller, host) = makeController()
+        controller.login("alice", "secret")
+        val appId = controller.library().first().id
+        host.installed += appId
+
+        val launchResult = controller.launch(appId)
+        assertTrue(launchResult.success)
+        assertTrue(launchResult.message.contains("appId $appId"))
     }
 }
