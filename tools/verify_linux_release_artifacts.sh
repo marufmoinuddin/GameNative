@@ -65,4 +65,15 @@ if [[ "$canonical_actual_sha" != "$canonical_sha256" ]]; then
   exit 1
 fi
 
+echo "[4/4] Verify packaged CLI payload presence"
+if ! tar -tzf "$canonical_artifact" | grep -q 'gamenative-linux/cli/build/libs/cli-'; then
+  echo "FAIL: canonical artifact missing versioned CLI jar under gamenative-linux/cli/build/libs"
+  exit 1
+fi
+
+if ! tar -tzf "$canonical_artifact" | grep -q 'gamenative-linux/cli/build/packaging/runtime-libs/'; then
+  echo "FAIL: canonical artifact missing CLI runtime-libs directory"
+  exit 1
+fi
+
 echo "Release artifact verification PASS"

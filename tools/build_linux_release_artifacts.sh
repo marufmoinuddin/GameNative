@@ -13,11 +13,17 @@ out_dir="build/release/linux-arm64"
 stage_dir="$out_dir/stage"
 mkdir -p "$stage_dir"
 
+# Ensure desktop shell and CLI jars + runtime dependency jars are materialized for packaged launcher execution.
+./gradlew -p gamenative-linux \
+  :desktop:shell:jar :desktop:shell:copyDesktopRuntimeClasspath \
+  :cli:jar :cli:copyCliRuntimeClasspath >/dev/null
+
 # Stage core deliverables.
 cp -r gamenative-linux "$stage_dir/"
 cp -r packaging "$stage_dir/"
 cp LINUX_ARM64_PORT_PLAN.md "$stage_dir/"
 cp README.md "$stage_dir/"
+cp LICENSE "$stage_dir/"
 
 artifact_name="gamenative-linux-${release_id}-aarch64.tar.gz"
 artifact_path="$out_dir/$artifact_name"

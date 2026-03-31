@@ -136,7 +136,7 @@ This section tracks real implementation progress against the plan.
 - Phase 1: **substantially complete** (Linux workspace scaffolded, modules compile, core interfaces and baseline impls added)
 - Phase 2: **complete** (domain migration, steam service decomposition boundaries, typed config migration, keyring fallback chain, and persistence migration validator implemented)
 - Phase 3: **complete** (runtime orchestration, supervision/recovery persistence, diagnostics pipeline, and integration checks implemented)
-- Phase 4: **complete** (desktop shell P0 workflow surfaces implemented: diagnostics, account, library, game detail, downloads, profile editor, session monitor, settings, and persistent task queue)
+- Phase 4: **workflow-complete, visual-parity pending** (desktop shell P0 workflow surfaces implemented, but Android-grade 1:1 frontend parity has not yet been delivered)
 - Phase 5: **complete** (release-grade packaging and CI pipeline implemented with artifact generation, integrity verification, source RPM build, signing gates, and release workflows)
 - Phase 6: **complete** (hardening automation gates now pass end-to-end: audit, compile/test, schema stability, security scan, and architecture-aware runtime proof)
 
@@ -213,6 +213,8 @@ This section tracks real implementation progress against the plan.
 - Runtime integration checks now validate supervision/recovery orchestration behavior end-to-end (delay-hold launch, manual-hold block, and persisted telemetry/timeline events).
 - Runtime module now exposes a strict `runRuntimeProof` verification task that fails unless Wine+Box64 capability checks and smoke command execution pass.
 - Desktop shell now includes tabbed P0 workflow surfaces for Diagnostics, Account sign-in, Library, Game Detail, Downloads, Profiles, Session Monitor, and Settings using runtime/store service boundaries.
+- Desktop shell controller now routes account/library/download workflows through `JavaSteam*` service boundaries via prototype gateways instead of direct in-memory service implementations.
+- Desktop shell Steam gateway wiring is now mode-configurable (`PROTOTYPE` or `FIXTURE`) using `GAMENATIVE_STEAM_GATEWAY_MODE`, with fixture-root override via `GAMENATIVE_STEAM_FIXTURE_ROOT`.
 - Desktop shell now persists app-level settings in `~/.config/gamenative/desktop-settings.properties` and tracks background queue tasks in `~/.local/state/gamenative/desktop-tasks.properties`.
 - Desktop shell controller and persistence components now include workflow tests for profile save/reload, game detail selection, download task state tracking, settings persistence, and task resume behavior.
 - Packaging scaffold added under `packaging/fedora/` (RPM spec, desktop entry, AppStream metadata, dependency list, post-install checks).
@@ -231,10 +233,11 @@ This section tracks real implementation progress against the plan.
 ### Remaining High-Level Work
 
 - Replace in-memory desktop workflow adapters with production Steam auth/library/download integrations and real runtime session streaming.
+- Execute a dedicated frontend parity program to make Linux UI/UX a 1:1 replica of the Android experience (visual design, interactions, motion, and screen behavior).
 
 ### Suggested Next Milestone
 
-- Finalize production store/runtime integration for desktop workflows and publish first signed release from the new pipeline.
+- Start Phase 4A frontend parity baseline (token extraction + component inventory + visual diff tooling) while finalizing production store/runtime integration.
 
 ---
 
@@ -660,6 +663,176 @@ On Linux there is no Android Service lifecycle. Replace with:
 3. Profile editor and diagnostics panel functional.
 4. Session log export to file.
 
+### 4.5 Frontend 1:1 Android Replica Plan (New)
+
+**Goal:** make Linux desktop UI match Android UI/UX with high-fidelity parity, with explicit acceptance gates per screen and interaction.
+
+#### 4.5.1 Parity Scope Definition (Week 1)
+
+Build a parity baseline before implementation:
+
+1. Create Android UI inventory for every P0/P1 screen (`ui/screen/*`, `ui/component/*`, `ui/theme/*`):
+  - layout hierarchy
+  - spacing values and breakpoints
+  - typography scale and font weights
+  - color/alpha/elevation tokens
+  - iconography and artwork treatment
+2. Capture a reference screenshot pack from Android for each state:
+  - loading
+  - empty
+  - error
+  - populated
+  - destructive/confirmation dialogs
+3. Define parity budget:
+  - visual variance target: <= 2px spacing drift for core layouts
+  - typography variance target: same size/weight/line-height or documented fallback
+  - interaction variance target: no missing primary actions or regressions in flow order
+
+**Deliverable:** `docs/architecture/frontend-parity-baseline.md` + versioned screenshot set under `docs/architecture/frontend-parity/`.
+
+#### 4.5.2 Design Token and Theme Parity (Week 1–2)
+
+1. Extract Android design tokens into a shared contract used by desktop shell:
+  - color roles
+  - spacing scale
+  - radius/elevation
+  - typography styles
+2. Implement a desktop token adapter so Compose Desktop renders the same semantic theme values.
+3. Add strict token lint checks (no hardcoded ad-hoc colors/spacing in new screen work).
+
+**Deliverable:** shared token map + desktop theme layer with snapshot tests for token resolution.
+
+#### 4.5.3 Component-Level Replica Track (Week 2–4)
+
+Rebuild/align reusable components before screen rewrites:
+
+1. Top bars, navigation rails/tabs, cards, list rows, buttons, chips, badges.
+2. Input controls and dialogs (text fields, toggles, selectors, modals, confirmations).
+3. Status/progress components (download rows, progress indicators, banners, toasts).
+4. Empty/error/loading states with Android-equivalent content hierarchy.
+
+For each component, define:
+
+- Android reference
+- desktop implementation
+- screenshot diff result
+- interaction checklist (hover/focus/pressed/disabled)
+
+**Deliverable:** parity component matrix in `docs/architecture/feature-reuse-matrix.md` (new desktop parity columns).
+
+#### 4.5.4 Screen-by-Screen Parity Sprints (Week 4–8)
+
+Implement in this order to maximize user-visible impact:
+
+1. Library list + filtering/search flows.
+2. Game detail (hero/info/actions/media metadata layout).
+3. Downloads/install queue and progress UX.
+4. Account/auth flows (including 2FA states).
+5. Diagnostics, profiles, settings, and session monitor.
+
+Each screen cannot exit sprint unless all are true:
+
+1. Android reference states fully covered.
+2. Keyboard/controller navigation path defined and tested.
+3. Screenshot diff gate passes on required states.
+4. Interaction and copy parity checklist signed off.
+
+#### 4.5.5 Motion and Micro-Interaction Parity (Week 6–8, overlapping)
+
+1. Match transition timing/easing for navigation, dialogs, and list updates.
+2. Match loading shimmer/skeleton behavior where present.
+3. Ensure focus rings and accessibility affordances are consistent on desktop inputs.
+
+**Deliverable:** motion spec appendix with measured durations and easing curves.
+
+#### 4.5.6 Validation Gates and Definition of Done
+
+Parity is considered complete only when all conditions pass:
+
+1. Every P0 screen has a side-by-side Android vs Linux parity checklist with explicit pass/fail.
+2. Screenshot regression pipeline runs in CI for desktop shell and blocks on unapproved drift.
+3. UX walkthrough for primary flows shows no crude/placeholder UI elements.
+4. At least one external reviewer signs off that Linux feels materially identical to Android for core workflows.
+
+**Definition of Done (Frontend Parity):**
+
+- No major visual mismatch in primary workflows (library, game detail, downloads, auth).
+- No missing primary actions compared to Android.
+- No legacy prototype-style components left in P0 screens.
+- Parity documentation and screenshot references are current and versioned.
+
+### 4.6 Frontend Parity Execution Board (Actionable)
+
+Use this as the day-to-day implementation tracker for the 1:1 replica effort.
+
+#### 4.6.1 Epics and Owners
+
+| Epic | Scope | Primary Paths | Owner | Exit Criteria |
+|---|---|---|---|---|
+| E1: Android UI Baseline Capture | Source-of-truth extraction for screens/components/states | `app/src/main/java/app/gamenative/ui/screen/**`, `app/src/main/java/app/gamenative/ui/component/**`, `app/src/main/java/app/gamenative/ui/theme/**`, `docs/architecture/frontend-parity/**` | UI Platform | Baseline doc + screenshot pack complete for all P0 screens/states |
+| E2: Token + Theme Parity | Shared semantic token map and desktop theme application | `desktop/shell/src/main/kotlin/**/theme/**`, `docs/architecture/frontend-parity-baseline.md` | UI Platform | Token diff checklist is green; no hardcoded core tokens in P0 screens |
+| E3: Component Replica Library | Rebuild shared primitives to Android-equivalent visuals/interactions | `desktop/shell/src/main/kotlin/**/component/**` | UI Systems | Component matrix complete with screenshot diff and interaction checklist |
+| E4: Screen Parity Delivery | Apply parity components/theme screen-by-screen for P0 flows | `desktop/shell/src/main/kotlin/**/screen/**`, `desktop/shell/src/main/kotlin/**/navigation/**` | Feature Pods | All P0 screens pass parity checklist and screenshot gate |
+| E5: Motion + Interaction Polish | Timing/easing/focus/navigation parity | `desktop/shell/src/main/kotlin/**/screen/**`, `desktop/shell/src/main/kotlin/**/component/**` | UX Engineering | Motion appendix finalized; no placeholder transitions in P0 |
+| E6: CI Parity Gates | Screenshot regression + approval workflow | `.github/workflows/**`, `desktop/shell` test fixtures | DevEx/CI | CI blocks unapproved parity drift on protected branches |
+
+#### 4.6.2 Week-by-Week Plan (8 Weeks)
+
+| Week | Focus | Concrete Outputs |
+|---|---|---|
+| W1 | Baseline inventory + screenshot harness | `frontend-parity-baseline.md`, initial screenshot corpus, state inventory table |
+| W2 | Token/theme parity | Desktop token adapter, typography parity table, token lint rule draft |
+| W3 | Core components batch A | top bars/nav/cards/buttons/list rows + diffs |
+| W4 | Core components batch B | dialogs/forms/progress/empty-error states + diffs |
+| W5 | Screen parity sprint A | library + game detail parity checklists green |
+| W6 | Screen parity sprint B | downloads + account/auth parity checklists green |
+| W7 | Screen parity sprint C + motion | diagnostics/profiles/settings/session monitor + motion appendix |
+| W8 | Gate hardening + review | CI screenshot gate blocking, external parity review sign-off |
+
+#### 4.6.3 Story Template (Per Screen)
+
+Every screen implementation story must include:
+
+1. Android reference links (code paths + screenshots).
+2. Linux target paths and modified component list.
+3. State coverage checklist: loading, empty, error, populated, modal.
+4. Input parity checklist: mouse, keyboard, controller focus order.
+5. Screenshot diff artifacts attached before merge.
+
+#### 4.6.4 Required File/Module Mapping for Initial Tickets
+
+Use this mapping to generate the first issue batch.
+
+| Ticket Group | Android Source | Linux Target |
+|---|---|---|
+| Theme/token extraction | `app/src/main/java/app/gamenative/ui/theme/**` | `desktop/shell/src/main/kotlin/**/theme/**` |
+| Navigation shell parity | `app/src/main/java/app/gamenative/ui/PluviaMain.kt` | `desktop/shell/src/main/kotlin/**/navigation/**` |
+| Library screen parity | `app/src/main/java/app/gamenative/ui/screen/**Library*` | `desktop/shell/src/main/kotlin/**/screen/**Library*` |
+| Game detail parity | `app/src/main/java/app/gamenative/ui/screen/**GameDetail*` | `desktop/shell/src/main/kotlin/**/screen/**GameDetail*` |
+| Download queue parity | `app/src/main/java/app/gamenative/ui/screen/**Download*` | `desktop/shell/src/main/kotlin/**/screen/**Download*` |
+| Account/auth parity | `app/src/main/java/app/gamenative/ui/screen/**Account*`, `**Login*` | `desktop/shell/src/main/kotlin/**/screen/**Account*`, `**Login*` |
+| Shared component parity | `app/src/main/java/app/gamenative/ui/component/**` | `desktop/shell/src/main/kotlin/**/component/**` |
+
+#### 4.6.5 Tracking Checklist
+
+Maintain this checklist in PRs and weekly review notes:
+
+- [ ] Baseline assets updated when Android UI changes.
+- [ ] New/updated desktop component has Android reference and parity notes.
+- [ ] No unresolved visual drift in approved screenshot diff for touched states.
+- [ ] No crude/placeholder styles remain in touched P0 workflow.
+- [ ] Accessibility/focus behavior validated for touched screens.
+- [ ] Reviewer confirms parity acceptance criteria for merged work.
+
+#### 4.6.6 Release Gate for Declaring “Android-Like Frontend”
+
+Do not market frontend parity as complete until all conditions are true:
+
+1. E1–E6 exit criteria are complete.
+2. All P0 screens have signed parity checklists stored under `docs/architecture/frontend-parity/`.
+3. Screenshot regression gate is mandatory in mainline CI.
+4. Product/UX review signs off “no crude UI” for core flows.
+
 ---
 
 ## Phase 5: Packaging, CI/CD, and Fedora ARM64 Binary Release
@@ -852,6 +1025,7 @@ Realistic timeline for a small focused team (3–5 engineers):
 | Phase 2 | Domain migration, SteamService decomposition, DB/config migration | 7–13 |
 | Phase 3 | Runtime orchestration, Wine+Box64 integration, process management | 10–16 (overlaps Phase 2) |
 | Phase 4 | Desktop UI, all P0 screens, state architecture | 14–20 |
+| Phase 4A | Frontend 1:1 Android parity (tokens, components, screens, motion, diff gates) | 20–28 |
 | Phase 5 | Packaging, CI/CD, RPM, release pipeline | 18–22 |
 | Phase 6 | Stabilization, security, performance, v1.0 RC | 23–28 |
 

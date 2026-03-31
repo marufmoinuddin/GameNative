@@ -2,7 +2,7 @@
 Type=Application
 Name=GameNative
 Comment=Linux ARM64 game launcher runtime shell
-Exec=./gradlew -p gamenative-linux :desktop:shell:runDesktopShell
+Exec=gamenative
 Icon=app.gamenative.GameNative
 Terminal=false
 Categories=Game;

@@ -9,6 +9,7 @@
 
 The Linux scaffold lives under `gamenative-linux/` and currently includes:
 
+- `cli`
 - `core/domain`
 - `core/runtime`
 - `core/store-steam`
@@ -41,6 +42,12 @@ From repository root:
 - Run desktop shell prototype UI:
   - `./gradlew -p gamenative-linux :desktop:shell:runDesktopShell`
 
+- Run GameNative CLI (real Steam network mode):
+  - `./gradlew -p gamenative-linux :cli:runCli`
+
+- Show GameNative CLI help:
+  - `./gradlew -p gamenative-linux :cli:runCli --args='--help'`
+
 - Run strict Phase 3 runtime proof (Wine+Box64 readiness gate):
   - `./gradlew -p gamenative-linux :core:runtime:runRuntimeProof`
 
@@ -72,6 +79,13 @@ From repository root:
 - Runtime schema stability check: passing.
 - Security log leakage check: passing.
 - Runtime proof: passing on this workstation (architecture-aware validation). ARM64 hosts still require Wine+Box64.
+
+## GameNative CLI (`gamenative-cli`)
+
+- CLI mode is real-only: JavaSteam network flow is always enabled.
+- CLI no longer supports non-real mode flags.
+- Login, Steam Guard prompts, and owned game list are backed by live Steam responses.
+- For packaged installs, the RPM launcher entrypoint is `gamenative-cli`.
 
 Runtime prototype artifacts are written to:
 
@@ -159,7 +173,16 @@ Runtime recovery state now persists launch state machine events in `recovery/lau
 - `core/store-steam`: `InMemorySteamSessionManager`, `JavaSteamSessionManager`, `InMemorySteamLibraryService`, `JavaSteamLibraryService`, `FixtureSteamLibraryService`, `InMemorySteamDownloadManager`, `JavaSteamDownloadManager`, `FixtureSteamDownloadManager`, `InMemorySteamCloudSaveService`, `JavaSteamCloudSaveService`, `FixtureSteamCloudSaveService`
 - `desktop/shell`: tabbed P0 workflow surfaces (Diagnostics, Account, Library, Game Detail, Downloads, Profiles, Session Monitor, Settings)
 - `desktop/shell`: `DesktopSettingsStore` (`~/.config/gamenative/desktop-settings.properties`) and `DesktopTaskScheduler` (`~/.local/state/gamenative/desktop-tasks.properties`)
+- `desktop/shell`: account/library/download workflows now route via `JavaSteamSessionManager`, `JavaSteamLibraryService`, and `JavaSteamDownloadManager` through prototype gateway adapters
+- `desktop/shell`: gateway selection is configurable via `GAMENATIVE_STEAM_GATEWAY_MODE` (`PROTOTYPE` default, `FIXTURE` optional)
+- `desktop/shell`: fixture mode root is configurable via `GAMENATIVE_STEAM_FIXTURE_ROOT` (defaults to `~/.local/share/gamenative/fixtures`)
 - Fixture library/download/cloud services now delegate to the gateway-backed JavaSteam service layer to keep behavior parity while adapters are swapped.
+
+Fixture mode expects these files under the fixture root:
+
+- `steam-library.json`
+- `steam-downloads.json`
+- `steam-auth-users.txt` (optional allow-list for usernames)
 
 ## Unit Test Commands
 

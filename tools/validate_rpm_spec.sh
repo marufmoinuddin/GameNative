@@ -21,7 +21,7 @@ rpmspec -P "$spec_file" >/dev/null
 
 echo "[2/2] Validate required runtime deps"
 requires_output="$(rpmspec -q --requires "$spec_file")"
-for dep in wine box64 mesa-vulkan-drivers libsecret java-17-openjdk-headless; do
+for dep in wine box64 mesa-vulkan-drivers libsecret java-headless; do
   if ! grep -q "^${dep}" <<<"$requires_output"; then
     echo "FAIL: missing runtime dependency '$dep' in spec requires"
     exit 1

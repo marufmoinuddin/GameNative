@@ -1,19 +1,19 @@
 package app.gamenative.linux.desktop.shell
 
+import app.gamenative.linux.desktop.shell.ui.DesktopShellSwingTheme
+import app.gamenative.linux.desktop.shell.ui.DesktopShellThemeTokens
+import app.gamenative.linux.desktop.shell.ui.DesktopShellUiPrimitives
 import app.gamenative.linux.runtime.RuntimeBackend
 import javax.swing.BorderFactory
 import javax.swing.BoxLayout
 import javax.swing.DefaultListModel
-import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JFrame
-import javax.swing.JLabel
 import javax.swing.JList
 import javax.swing.JOptionPane
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTabbedPane
-import javax.swing.JTextArea
 import javax.swing.JTextField
 import javax.swing.SwingUtilities
 
@@ -27,167 +27,144 @@ private class DesktopShellWindow {
     private val controller = DesktopShellController()
 
     private val frame = JFrame("GameNative Linux Desktop Shell")
-    private val diagnosticsArea = JTextArea(8, 80)
+    private val diagnosticsArea = DesktopShellUiPrimitives.outputArea(8, 80)
     private val profileModel = DefaultListModel<String>()
     private val profileList = JList(profileModel)
 
-    private val idField = JTextField("default", 20)
-    private val nameField = JTextField("Default", 20)
-    private val wineField = JTextField("wine", 20)
+    private val idField = DesktopShellUiPrimitives.inputField("default", 20)
+    private val nameField = DesktopShellUiPrimitives.inputField("Default", 20)
+    private val wineField = DesktopShellUiPrimitives.inputField("wine", 20)
     private val backendBox = JComboBox(RuntimeBackend.entries.toTypedArray())
 
-    private val sessionArea = JTextArea(5, 80)
-    private val usernameField = JTextField("", 20)
-    private val passwordField = JTextField("", 20)
+    private val sessionArea = DesktopShellUiPrimitives.outputArea(5, 80)
+    private val usernameField = DesktopShellUiPrimitives.inputField("", 20)
+    private val passwordField = DesktopShellUiPrimitives.inputField("", 20)
 
-    private val libraryArea = JTextArea(10, 80)
-    private val gameDetailArea = JTextArea(7, 80)
-    private val detailAppIdField = JTextField("620", 8)
-    private val appIdField = JTextField("620", 8)
-    private val queueArea = JTextArea(6, 80)
-    private val taskArea = JTextArea(8, 80)
+    private val libraryArea = DesktopShellUiPrimitives.outputArea(10, 80)
+    private val gameDetailArea = DesktopShellUiPrimitives.outputArea(7, 80)
+    private val detailAppIdField = DesktopShellUiPrimitives.inputField("620", 8)
+    private val appIdField = DesktopShellUiPrimitives.inputField("620", 8)
+    private val queueArea = DesktopShellUiPrimitives.outputArea(6, 80)
+    private val taskArea = DesktopShellUiPrimitives.outputArea(8, 80)
 
-    private val sessionMonitorArea = JTextArea(8, 80)
-    private val settingsArea = JTextArea(6, 80)
-    private val downloadRootField = JTextField("~/.local/share/gamenative/games", 40)
-    private val pollingField = JTextField("10", 6)
+    private val sessionMonitorArea = DesktopShellUiPrimitives.outputArea(8, 80)
+    private val settingsArea = DesktopShellUiPrimitives.outputArea(6, 80)
+    private val downloadRootField = DesktopShellUiPrimitives.inputField("~/.local/share/gamenative/games", 40)
+    private val pollingField = DesktopShellUiPrimitives.inputField("10", 6)
 
     init {
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-        frame.setSize(980, 680)
+        frame.setSize(1120, 760)
         frame.setLocationRelativeTo(null)
 
         val root = JPanel()
         root.layout = BoxLayout(root, BoxLayout.Y_AXIS)
-        root.border = BorderFactory.createEmptyBorder(14, 14, 14, 14)
+        root.border = BorderFactory.createEmptyBorder(
+            DesktopShellThemeTokens.current.spacing.lg,
+            DesktopShellThemeTokens.current.spacing.lg,
+            DesktopShellThemeTokens.current.spacing.lg,
+            DesktopShellThemeTokens.current.spacing.lg,
+        )
 
         val tabs = JTabbedPane()
 
-        val refreshButton = JButton("Refresh Diagnostics + Profiles")
-        refreshButton.addActionListener { refreshState() }
+        val refreshButton = DesktopShellUiPrimitives.actionButton("Refresh Diagnostics + Profiles") { refreshState() }
 
-        diagnosticsArea.isEditable = false
-        val diagnosticsPane = JScrollPane(diagnosticsArea)
-        diagnosticsPane.border = BorderFactory.createTitledBorder("First-Run Diagnostics")
-        val diagnosticsPanel = JPanel()
-        diagnosticsPanel.layout = BoxLayout(diagnosticsPanel, BoxLayout.Y_AXIS)
+        val diagnosticsPane = DesktopShellUiPrimitives.scroll(diagnosticsArea)
+        diagnosticsPane.border = DesktopShellSwingTheme.sectionBorder("First-Run Diagnostics")
+        val diagnosticsPanel = DesktopShellUiPrimitives.screenPanel()
         diagnosticsPanel.add(refreshButton)
         diagnosticsPanel.add(diagnosticsPane)
         tabs.addTab("Diagnostics", JScrollPane(diagnosticsPanel))
 
         val profilePane = JScrollPane(profileList)
-        profilePane.border = BorderFactory.createTitledBorder("Runtime Profiles")
+        profilePane.border = DesktopShellSwingTheme.sectionBorder("Runtime Profiles")
 
-        val editor = JPanel()
-        editor.layout = BoxLayout(editor, BoxLayout.Y_AXIS)
-        editor.border = BorderFactory.createTitledBorder("Profile Editor")
-        editor.add(JLabel("Profile ID"))
+        val editor = DesktopShellUiPrimitives.screenPanel()
+        editor.border = DesktopShellSwingTheme.sectionBorder("Profile Editor")
+        editor.add(DesktopShellUiPrimitives.fieldLabel("Profile ID"))
         editor.add(idField)
-        editor.add(JLabel("Name"))
+        editor.add(DesktopShellUiPrimitives.fieldLabel("Name"))
         editor.add(nameField)
-        editor.add(JLabel("Wine Binary"))
+        editor.add(DesktopShellUiPrimitives.fieldLabel("Wine Binary"))
         editor.add(wineField)
-        editor.add(JLabel("Backend"))
+        editor.add(DesktopShellUiPrimitives.fieldLabel("Backend"))
         editor.add(backendBox)
 
-        val saveButton = JButton("Save Profile")
-        saveButton.addActionListener { saveProfile() }
+        val saveButton = DesktopShellUiPrimitives.actionButton("Save Profile") { saveProfile() }
         editor.add(saveButton)
 
-        val profilePanel = JPanel()
-        profilePanel.layout = BoxLayout(profilePanel, BoxLayout.Y_AXIS)
+        val profilePanel = DesktopShellUiPrimitives.screenPanel()
         profilePanel.add(profilePane)
         profilePanel.add(editor)
         tabs.addTab("Profiles", JScrollPane(profilePanel))
 
-        val accountPanel = JPanel()
-        accountPanel.layout = BoxLayout(accountPanel, BoxLayout.Y_AXIS)
-        sessionArea.isEditable = false
-        accountPanel.border = BorderFactory.createTitledBorder("Steam Account Sign-In")
-        accountPanel.add(JLabel("Username"))
+        val accountPanel = DesktopShellUiPrimitives.screenPanel()
+        accountPanel.border = DesktopShellSwingTheme.sectionBorder("Steam Account Sign-In")
+        accountPanel.add(DesktopShellUiPrimitives.fieldLabel("Username"))
         accountPanel.add(usernameField)
-        accountPanel.add(JLabel("Password"))
+        accountPanel.add(DesktopShellUiPrimitives.fieldLabel("Password"))
         accountPanel.add(passwordField)
-        val loginButton = JButton("Login")
-        loginButton.addActionListener { login() }
-        val logoutButton = JButton("Logout")
-        logoutButton.addActionListener { logout() }
+        val loginButton = DesktopShellUiPrimitives.actionButton("Login") { login() }
+        val logoutButton = DesktopShellUiPrimitives.actionButton("Logout") { logout() }
         accountPanel.add(loginButton)
         accountPanel.add(logoutButton)
-        accountPanel.add(JScrollPane(sessionArea))
+        accountPanel.add(DesktopShellUiPrimitives.scroll(sessionArea))
         tabs.addTab("Account", JScrollPane(accountPanel))
 
-        val libraryPanel = JPanel()
-        libraryPanel.layout = BoxLayout(libraryPanel, BoxLayout.Y_AXIS)
-        libraryArea.isEditable = false
-        val refreshLibraryButton = JButton("Refresh Owned Apps")
-        refreshLibraryButton.addActionListener { refreshLibrary() }
-        val openDetailsButton = JButton("Open Game Details")
-        openDetailsButton.addActionListener { openGameDetails() }
+        val libraryPanel = DesktopShellUiPrimitives.screenPanel()
+        val refreshLibraryButton = DesktopShellUiPrimitives.actionButton("Refresh Owned Apps") { refreshLibrary() }
+        val openDetailsButton = DesktopShellUiPrimitives.actionButton("Open Game Details") { openGameDetails() }
         libraryPanel.add(refreshLibraryButton)
-        libraryPanel.add(JLabel("Game Detail App ID"))
+        libraryPanel.add(DesktopShellUiPrimitives.fieldLabel("Game Detail App ID"))
         libraryPanel.add(detailAppIdField)
         libraryPanel.add(openDetailsButton)
-        libraryPanel.add(JScrollPane(libraryArea))
+        libraryPanel.add(DesktopShellUiPrimitives.scroll(libraryArea))
         tabs.addTab("Library", JScrollPane(libraryPanel))
 
-        val gameDetailPanel = JPanel()
-        gameDetailPanel.layout = BoxLayout(gameDetailPanel, BoxLayout.Y_AXIS)
-        gameDetailArea.isEditable = false
-        gameDetailPanel.add(JLabel("Game Detail"))
-        gameDetailPanel.add(JScrollPane(gameDetailArea))
+        val gameDetailPanel = DesktopShellUiPrimitives.screenPanel()
+        gameDetailPanel.add(DesktopShellUiPrimitives.fieldLabel("Game Detail"))
+        gameDetailPanel.add(DesktopShellUiPrimitives.scroll(gameDetailArea))
         tabs.addTab("Game Detail", JScrollPane(gameDetailPanel))
 
-        val downloadsPanel = JPanel()
-        downloadsPanel.layout = BoxLayout(downloadsPanel, BoxLayout.Y_AXIS)
-        queueArea.isEditable = false
-        downloadsPanel.add(JLabel("App ID"))
+        val downloadsPanel = DesktopShellUiPrimitives.screenPanel()
+        downloadsPanel.add(DesktopShellUiPrimitives.fieldLabel("App ID"))
         downloadsPanel.add(appIdField)
-        val enqueueButton = JButton("Enqueue")
-        enqueueButton.addActionListener { mutateQueue("enqueue") }
-        val pauseButton = JButton("Pause")
-        pauseButton.addActionListener { mutateQueue("pause") }
-        val cancelButton = JButton("Cancel")
-        cancelButton.addActionListener { mutateQueue("cancel") }
+        val enqueueButton = DesktopShellUiPrimitives.actionButton("Enqueue") { mutateQueue("enqueue") }
+        val pauseButton = DesktopShellUiPrimitives.actionButton("Pause") { mutateQueue("pause") }
+        val cancelButton = DesktopShellUiPrimitives.actionButton("Cancel") { mutateQueue("cancel") }
         downloadsPanel.add(enqueueButton)
         downloadsPanel.add(pauseButton)
         downloadsPanel.add(cancelButton)
-        downloadsPanel.add(JScrollPane(queueArea))
+        downloadsPanel.add(DesktopShellUiPrimitives.scroll(queueArea))
         tabs.addTab("Downloads", JScrollPane(downloadsPanel))
 
-        val tasksPanel = JPanel()
-        tasksPanel.layout = BoxLayout(tasksPanel, BoxLayout.Y_AXIS)
-        taskArea.isEditable = false
-        val refreshTasksButton = JButton("Refresh Tasks")
-        refreshTasksButton.addActionListener { refreshState() }
+        val tasksPanel = DesktopShellUiPrimitives.screenPanel()
+        val refreshTasksButton = DesktopShellUiPrimitives.actionButton("Refresh Tasks") { refreshState() }
         tasksPanel.add(refreshTasksButton)
-        tasksPanel.add(JScrollPane(taskArea))
+        tasksPanel.add(DesktopShellUiPrimitives.scroll(taskArea))
         tabs.addTab("Background Tasks", JScrollPane(tasksPanel))
 
-        val sessionMonitorPanel = JPanel()
-        sessionMonitorPanel.layout = BoxLayout(sessionMonitorPanel, BoxLayout.Y_AXIS)
-        sessionMonitorArea.isEditable = false
-        sessionMonitorPanel.add(JLabel("Latest Runtime Session Timeline"))
-        sessionMonitorPanel.add(JScrollPane(sessionMonitorArea))
+        val sessionMonitorPanel = DesktopShellUiPrimitives.screenPanel()
+        sessionMonitorPanel.add(DesktopShellUiPrimitives.fieldLabel("Latest Runtime Session Timeline"))
+        sessionMonitorPanel.add(DesktopShellUiPrimitives.scroll(sessionMonitorArea))
         tabs.addTab("Session Monitor", JScrollPane(sessionMonitorPanel))
 
-        val settingsPanel = JPanel()
-        settingsPanel.layout = BoxLayout(settingsPanel, BoxLayout.Y_AXIS)
-        settingsArea.isEditable = false
-        settingsPanel.add(JLabel("Settings / Runtime Paths"))
-        settingsPanel.add(JLabel("Download Root"))
+        val settingsPanel = DesktopShellUiPrimitives.screenPanel()
+        settingsPanel.add(DesktopShellUiPrimitives.fieldLabel("Settings / Runtime Paths"))
+        settingsPanel.add(DesktopShellUiPrimitives.fieldLabel("Download Root"))
         settingsPanel.add(downloadRootField)
-        settingsPanel.add(JLabel("Diagnostics Polling Seconds"))
+        settingsPanel.add(DesktopShellUiPrimitives.fieldLabel("Diagnostics Polling Seconds"))
         settingsPanel.add(pollingField)
-        val saveSettingsButton = JButton("Save Settings")
-        saveSettingsButton.addActionListener { saveSettings() }
+        val saveSettingsButton = DesktopShellUiPrimitives.actionButton("Save Settings") { saveSettings() }
         settingsPanel.add(saveSettingsButton)
-        settingsPanel.add(JScrollPane(settingsArea))
+        settingsPanel.add(DesktopShellUiPrimitives.scroll(settingsArea))
         tabs.addTab("Settings", JScrollPane(settingsPanel))
 
         root.add(tabs)
 
         frame.contentPane = JScrollPane(root)
+        DesktopShellSwingTheme.apply(frame)
         refreshState()
     }
 

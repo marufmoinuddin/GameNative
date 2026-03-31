@@ -6,10 +6,11 @@ import app.gamenative.linux.runtime.FileProfileRepository
 import app.gamenative.linux.runtime.RuntimeBackend
 import app.gamenative.linux.runtime.RuntimeProfile
 import app.gamenative.linux.runtime.ShellCapabilityDetector
-import app.gamenative.linux.store.steam.InMemorySteamDownloadManager
-import app.gamenative.linux.store.steam.InMemorySteamLibraryService
-import app.gamenative.linux.store.steam.InMemorySteamSessionManager
+import app.gamenative.linux.store.steam.JavaSteamDownloadManager
+import app.gamenative.linux.store.steam.SteamDownloadManager
+import app.gamenative.linux.store.steam.SteamLibraryService
 import app.gamenative.linux.store.steam.SteamDownloadQueueSnapshot
+import app.gamenative.linux.store.steam.SteamSessionManager
 import app.gamenative.linux.store.steam.SteamSessionSnapshot
 import java.nio.file.Files
 import java.nio.file.Path
@@ -19,26 +20,27 @@ class DesktopShellController(
     private val profileRepositoryPath: Path = defaultProfilePath(),
     private val settingsStorePath: Path = defaultSettingsPath(),
     private val taskStorePath: Path = defaultTaskStorePath(),
+    private val steamGatewayMode: DesktopSteamGatewayMode = DesktopSteamGatewayMode.fromEnvironment(),
+    private val steamFixtureRoot: Path = DesktopSteamServiceFactory.fixtureRootFromEnvironment(),
 ) {
     private val profileRepository = FileProfileRepository(profileRepositoryPath)
     private val settingsStore = DesktopSettingsStore(settingsStorePath)
     private val taskScheduler = DesktopTaskScheduler(taskStorePath)
     private val capabilityDetector = ShellCapabilityDetector()
-    private val sessionManager = InMemorySteamSessionManager()
-    private val libraryService = InMemorySteamLibraryService(
-        appProvider = {
-            listOf(
-                SteamApp(id = 620, name = "Portal 2"),
-                SteamApp(id = 892970, name = "Valheim"),
-                SteamApp(id = 1086940, name = "Baldur's Gate 3"),
-            )
-        },
+    private val steamServices = DesktopSteamServiceFactory.create(
+        mode = steamGatewayMode,
+        fixtureRoot = steamFixtureRoot,
     )
-    private val downloadManager = InMemorySteamDownloadManager()
+    private val sessionManager: SteamSessionManager = steamServices.sessionManager
+    private val libraryService: SteamLibraryService = steamServices.libraryService
+    private val downloadManager: SteamDownloadManager = steamServices.downloadManager
     private var cachedLibrary: List<SteamApp> = emptyList()
     private var selectedAppId: Int? = null
 
     init {
+        runBlocking {
+            (downloadManager as? JavaSteamDownloadManager)?.bootstrapQueue()
+        }
         taskScheduler.resumePendingTasks()
     }
 

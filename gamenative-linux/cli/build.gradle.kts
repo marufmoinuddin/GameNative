@@ -25,24 +25,29 @@ dependencies {
     implementation(project(":core:runtime"))
     implementation(project(":core:store-steam"))
     implementation("io.github.joshuatam:javasteam:1.8.0.1-13-SNAPSHOT")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.80")
+    implementation("com.google.protobuf:protobuf-java:4.29.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.10.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
     testImplementation(kotlin("test"))
 }
 
-val copyDesktopRuntimeClasspath by tasks.registering(Copy::class) {
+val copyCliRuntimeClasspath by tasks.registering(Copy::class) {
     group = "distribution"
-    description = "Copies desktop shell runtime classpath jars for RPM launcher packaging."
+    description = "Copies CLI runtime classpath jars for RPM launcher packaging."
     dependsOn(tasks.named("jar"))
     from(configurations.runtimeClasspath)
     into(layout.buildDirectory.dir("packaging/runtime-libs"))
 }
 
-tasks.register<JavaExec>("runDesktopShell") {
+tasks.register<JavaExec>("runCli") {
     group = "application"
-    description = "Runs the Linux desktop shell prototype UI."
+    description = "Runs the GameNative interactive CLI."
     classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("app.gamenative.linux.desktop.shell.DesktopShellMainKt")
+    mainClass.set("app.gamenative.linux.cli.CliMainKt")
+    standardInput = System.`in`
 }
 
 tasks.test {
