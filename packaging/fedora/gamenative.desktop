@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=GameNative
+Comment=Linux ARM64 game launcher runtime shell
+Exec=./gradlew -p gamenative-linux :desktop:shell:runDesktopShell
+Icon=app.gamenative.GameNative
+Terminal=false
+Categories=Game;
+StartupNotify=true

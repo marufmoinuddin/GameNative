@@ -1,0 +1,5 @@
+wine
+box64
+mesa-vulkan-drivers
+libsecret
+java-17-openjdk-headless

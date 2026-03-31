@@ -1,0 +1,81 @@
+name: Linux Port Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., 0.1.0)"
+        required: true
+        default: "0.1.0"
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm gnupg
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compile and test Linux modules
+        run: |
+          ./gradlew -p gamenative-linux :core:domain:compileKotlin :core:runtime:compileKotlin :core:store-steam:compileKotlin :desktop:shell:compileKotlin :infra:config:compileKotlin :infra:keyring:compileKotlin :infra:network:compileKotlin :infra:persistence:compileKotlin :infra:notifications:compileKotlin
+          ./gradlew -p gamenative-linux :core:domain:test :core:runtime:test :core:store-steam:test :desktop:shell:test :infra:config:test :infra:keyring:test :infra:network:test :infra:persistence:test :infra:notifications:test
+
+      - name: Build release artifacts
+        run: ./tools/build_linux_release_artifacts.sh "${{ steps.version.outputs.value }}"
+
+      - name: Verify release artifacts
+        run: ./tools/verify_linux_release_artifacts.sh
+
+      - name: Validate RPM spec
+        run: ./tools/validate_rpm_spec.sh
+
+      - name: Build source RPM
+        run: ./tools/build_source_rpm.sh "${{ steps.version.outputs.value }}"
+
+      - name: Import signing key
+        env:
+          LINUX_RELEASE_GPG_PRIVATE_KEY: ${{ secrets.LINUX_RELEASE_GPG_PRIVATE_KEY }}
+        run: |
+          if [[ -z "$LINUX_RELEASE_GPG_PRIVATE_KEY" ]]; then
+            echo "FAIL: LINUX_RELEASE_GPG_PRIVATE_KEY secret is required for release signing."
+            exit 1
+          fi
+          echo "$LINUX_RELEASE_GPG_PRIVATE_KEY" | base64 -d | gpg --batch --import
+
+      - name: Sign release artifacts
+        run: ./tools/sign_linux_release_artifacts.sh
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gamenative-linux-release-${{ steps.version.outputs.value }}
+          path: |
+            build/release/linux-arm64/*.tar.gz
+            build/release/linux-arm64/*.sha256
+            build/release/linux-arm64/*.spdx.json
+            build/release/linux-arm64/*.txt
+            build/release/linux-arm64/*.asc
+            build/release/linux-arm64/srpm/*.src.rpm

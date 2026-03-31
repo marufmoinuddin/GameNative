@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.gamenative.GameNative</id>
+  <name>GameNative</name>
+  <summary>Linux ARM64 game launcher and runtime orchestration shell</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <description>
+    <p>GameNative provides runtime orchestration, diagnostics, and profile management for launching Windows games on Linux ARM64.</p>
+  </description>
+  <launchable type="desktop-id">gamenative.desktop</launchable>
+</component>
