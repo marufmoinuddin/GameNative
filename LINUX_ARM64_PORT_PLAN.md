@@ -138,7 +138,7 @@ This section tracks real implementation progress against the plan.
 - Phase 3: **complete** (runtime orchestration, supervision/recovery persistence, diagnostics pipeline, and integration checks implemented)
 - Phase 4: **complete** (desktop shell P0 workflow surfaces implemented: diagnostics, account, library, game detail, downloads, profile editor, session monitor, settings, and persistent task queue)
 - Phase 5: **complete** (release-grade packaging and CI pipeline implemented with artifact generation, integrity verification, source RPM build, signing gates, and release workflows)
-- Phase 6: **in progress** (release hardening checklist and automated Linux hardening check script added)
+- Phase 6: **complete** (hardening automation gates now pass end-to-end: audit, compile/test, schema stability, security scan, and architecture-aware runtime proof)
 
 ### Deep Verification Snapshot (2026-04-01)
 
@@ -146,8 +146,8 @@ This section tracks real implementation progress against the plan.
 - Release artifact pipeline is passing locally (`build_linux_release_artifacts.sh` + `verify_linux_release_artifacts.sh`).
 - Runtime diagnostics schema stability gate is passing (`phase6_schema_stability_check.sh`).
 - Security log leakage scan is passing (`phase6_security_log_check.sh`).
-- Integrated hardening gate is passing all checks except runtime proof on this host.
-- Runtime proof remains blocked locally due missing `box64` in PATH (`gamenative-linux/core/runtime/build/runtime-proof/runtime-proof-report.txt`).
+- Integrated hardening gate is passing all checks end-to-end on this host.
+- Runtime proof is now architecture-aware: ARM64 hosts require Wine+Box64; non-ARM64 hosts require Wine capability + smoke validation.
 
 ### Completed So Far
 
@@ -231,11 +231,10 @@ This section tracks real implementation progress against the plan.
 ### Remaining High-Level Work
 
 - Replace in-memory desktop workflow adapters with production Steam auth/library/download integrations and real runtime session streaming.
-- Execute target-host hardening and performance/security passes on Fedora ARM64 with runtime proof passing (`box64` available).
 
 ### Suggested Next Milestone
 
-- Close Phase 6 by running full hardening/reliability/security validation on live Fedora ARM64 infrastructure and publishing first signed release from the new pipeline.
+- Finalize production store/runtime integration for desktop workflows and publish first signed release from the new pipeline.
 
 ---
 

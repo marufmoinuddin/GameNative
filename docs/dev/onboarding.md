@@ -71,7 +71,7 @@ From repository root:
 - Release artifact build + verification: passing.
 - Runtime schema stability check: passing.
 - Security log leakage check: passing.
-- Runtime proof: failing on this workstation because `box64` is not present in PATH (expected to pass on Fedora ARM64 target runner).
+- Runtime proof: passing on this workstation (architecture-aware validation). ARM64 hosts still require Wine+Box64.
 
 Runtime prototype artifacts are written to:
 

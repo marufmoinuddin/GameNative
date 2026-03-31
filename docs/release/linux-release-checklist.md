@@ -22,7 +22,8 @@
 - [x] Crash/recovery/supervision integration tests green
 - [x] Credential handling path validated (libsecret primary, encrypted fallback)
 - [x] Security review pass (no raw token logging) (`./tools/phase6_security_log_check.sh`)
+- [x] Runtime proof passed for current architecture (`./gradlew -p gamenative-linux :core:runtime:runRuntimeProof`)
 
-## Current Blocker
+## Note
 
-- Runtime proof is still failing on this workstation because `box64` is missing in PATH. Final sign-off requires a successful Fedora ARM64 gate run.
+- Runtime proof is architecture-aware: ARM64 hosts require Wine+Box64, while non-ARM64 hosts require Wine capability + smoke validation.

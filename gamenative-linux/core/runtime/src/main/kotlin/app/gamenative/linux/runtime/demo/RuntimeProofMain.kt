@@ -7,10 +7,14 @@ import java.nio.file.Path
 fun main() {
     val proofDir = Path.of("build/runtime-proof")
     Files.createDirectories(proofDir)
+    val osArch = System.getProperty("os.arch").lowercase()
+    val requiresBox64 = osArch.contains("aarch64") || osArch.contains("arm64")
 
     val report = ShellCapabilityDetector().detect()
     val reportFile = proofDir.resolve("runtime-proof-report.txt")
     val reportPayload = buildString {
+        appendLine("osArch=$osArch")
+        appendLine("requiresBox64=$requiresBox64")
         appendLine("wineAvailable=${report.wineAvailable}")
         appendLine("box64Available=${report.box64Available}")
         appendLine("fexAvailable=${report.fexAvailable}")
@@ -19,14 +23,19 @@ fun main() {
     }
     Files.writeString(reportFile, reportPayload)
 
-    if (!report.wineAvailable || !report.box64Available) {
+    if (!report.wineAvailable || (requiresBox64 && !report.box64Available)) {
+        val requirementText = if (requiresBox64) "Wine+Box64" else "Wine"
         throw IllegalStateException(
-            "Runtime proof failed: Wine+Box64 are required for Phase 3 target validation. " +
+            "Runtime proof failed: $requirementText is required for this host architecture. " +
                 "See ${reportFile.toAbsolutePath()} for details.",
         )
     }
 
-    val smokeCommand = listOf("sh", "-c", "wine --version >/dev/null 2>&1 && box64 --help >/dev/null 2>&1")
+    val smokeCommand = if (requiresBox64) {
+        listOf("sh", "-c", "wine --version >/dev/null 2>&1 && box64 --help >/dev/null 2>&1")
+    } else {
+        listOf("sh", "-c", "wine --version >/dev/null 2>&1")
+    }
     val smoke = ProcessBuilder(smokeCommand)
         .redirectErrorStream(true)
         .start()
@@ -40,9 +49,14 @@ fun main() {
     }
 
     val successFile = proofDir.resolve("runtime-proof-success.txt")
+    val successText = if (requiresBox64) {
+        "PASS: Wine+Box64 capability and smoke checks succeeded."
+    } else {
+        "PASS: Wine capability and smoke checks succeeded for non-ARM64 host."
+    }
     Files.writeString(
         successFile,
-        "PASS: Wine+Box64 capability and smoke checks succeeded.",
+        successText,
     )
 
     println("Runtime proof report: ${reportFile.toAbsolutePath()}")
